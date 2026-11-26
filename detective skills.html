@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One-Minute Detective</title>
+<style>
+:root{--ink:#172033;--paper:#fff9e9;--gold:#ffc857;--red:#ef476f;--green:#20c997;--blue:#4d96ff;--purple:#7656d6;--shadow:#101827}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Segoe UI,system-ui,sans-serif;color:var(--ink);background:radial-gradient(circle at 15% 10%,#34445f 0,transparent 28%),linear-gradient(135deg,#111827,#293750 55%,#151b2a)}
+button{font:inherit;color:inherit}
+.screen{display:none;min-height:100vh;padding:20px}.screen.active{display:flex}
+.card{background:var(--paper);border:4px solid var(--ink);border-radius:24px;box-shadow:10px 10px 0 rgba(0,0,0,.35)}
+#menu,#result{align-items:center;justify-content:center}
+.menu-card,.result-card{width:min(900px,100%);padding:30px;text-align:center}
+.badge{display:inline-block;background:var(--red);color:#fff;border:3px solid var(--ink);border-radius:99px;padding:7px 16px;font-weight:900;transform:rotate(-2deg)}
+h1{font-size:clamp(42px,8vw,80px);line-height:.9;margin:18px 0 8px;text-transform:uppercase;letter-spacing:-3px;text-shadow:4px 4px 0 var(--gold)}
+.subtitle{font-size:19px;font-weight:700;color:#586175}
+.brief{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0;text-align:left}
+.brief div{background:#fff;border:3px solid var(--ink);border-radius:15px;padding:14px;font-weight:700}
+.brief b{display:block;color:var(--purple);margin-bottom:5px}
+.primary{border:4px solid var(--ink);border-radius:16px;background:var(--green);padding:14px 28px;font-size:21px;font-weight:1000;box-shadow:0 7px 0 var(--ink);cursor:pointer}
+.primary:hover{transform:translateY(-2px)}.primary:active{transform:translateY(6px);box-shadow:0 1px 0 var(--ink)}
+.keys{margin-top:22px;font-weight:700;color:#667085}kbd{background:var(--ink);color:white;padding:3px 8px;border-radius:6px}
+#game{flex-direction:column;gap:12px;padding:12px}
+.hud{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;background:var(--paper);border:4px solid var(--ink);border-radius:18px;padding:9px 16px;box-shadow:0 6px 0 rgba(0,0,0,.28)}
+.case-title{font-weight:1000;font-size:20px}.score{text-align:right;font-weight:900}
+.timer{font-size:34px;font-weight:1000;background:var(--gold);border:3px solid var(--ink);border-radius:13px;padding:2px 18px}
+.timer.danger{background:var(--red);color:#fff;animation:pulse .45s infinite alternate}
+@keyframes pulse{to{transform:scale(1.07)}}
+.layout{display:grid;grid-template-columns:230px minmax(470px,1fr) 290px;gap:12px;flex:1}
+.panel{background:var(--paper);border:4px solid var(--ink);border-radius:20px;padding:13px;box-shadow:0 6px 0 rgba(0,0,0,.25)}
+.panel h2{font-size:17px;text-transform:uppercase;margin:0 0 10px}
+.nav-btn{display:block;width:100%;border:3px solid var(--ink);border-radius:12px;background:#fff;padding:11px;margin:7px 0;font-weight:900;text-align:left;cursor:pointer;box-shadow:0 4px 0 rgba(23,32,51,.25)}
+.nav-btn:hover,.nav-btn.active{background:#dfeaff;transform:translateY(-1px)}
+.nav-btn .num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;margin-right:7px}
+.progress{height:13px;border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:#fff;margin:14px 0}.progress span{display:block;height:100%;background:var(--green);transition:.25s}
+.scene{position:relative;min-height:590px;overflow:hidden;background:linear-gradient(rgba(8,13,24,.1),rgba(8,13,24,.25)),repeating-linear-gradient(90deg,#8d7257 0,#8d7257 58px,#83684e 59px,#83684e 60px);border:5px solid var(--ink);border-radius:22px;box-shadow:inset 0 0 70px rgba(0,0,0,.45)}
+.scene:before{content:"";position:absolute;inset:0 0 62% 0;background:linear-gradient(#3b5269,#26394d);border-bottom:8px solid #162435}
+.window{position:absolute;left:8%;top:8%;width:24%;height:24%;border:8px solid #19283a;background:linear-gradient(145deg,#9edbff,#304b70);box-shadow:inset 0 0 0 4px #daeaff}
+.desk{position:absolute;left:13%;right:13%;bottom:12%;height:26%;background:linear-gradient(#845133,#54301f);border:6px solid #2c1c17;border-radius:8px;box-shadow:0 18px 0 #2f1c15}
+.lamp{position:absolute;right:12%;top:12%;font-size:90px;filter:drop-shadow(0 0 25px #ffe891)}
+.scene-title{position:absolute;left:18px;top:14px;background:rgba(255,249,233,.95);border:3px solid var(--ink);border-radius:12px;padding:8px 13px;font-weight:1000;z-index:3}
+.evidence{position:absolute;border:4px solid transparent;border-radius:50%;background:rgba(255,255,255,.08);width:70px;height:70px;font-size:40px;cursor:pointer;display:grid;place-items:center;transition:.15s;z-index:4}
+.evidence:hover,.evidence:focus{border-color:var(--gold);background:rgba(255,200,87,.3);transform:scale(1.15)}
+.evidence.found{border-color:var(--green);background:rgba(32,201,151,.35)}
+.evidence.found:after{content:"✓";position:absolute;right:-5px;top:-8px;font-size:19px;background:var(--green);border:2px solid var(--ink);border-radius:50%;width:25px;height:25px}
+.e1{left:19%;bottom:22%}.e2{left:46%;bottom:29%}.e3{right:18%;bottom:18%}.e4{right:28%;top:35%}
+.hint{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);background:rgba(23,32,51,.92);color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;white-space:nowrap}
+.content-view{display:none}.content-view.active{display:block}
+.clue-list{display:flex;flex-direction:column;gap:8px;max-height:500px;overflow:auto}
+.clue{border:3px solid var(--ink);border-radius:12px;background:#fff;padding:10px;font-size:14px}.clue b{display:block;color:var(--purple)}
+.empty{text-align:center;padding:30px 10px;color:#737b8c;font-weight:800}
+.suspect{border:3px solid var(--ink);border-radius:15px;background:#fff;margin-bottom:10px;padding:10px}
+.sus-head{display:flex;align-items:center;gap:9px}.avatar{font-size:35px;width:50px;height:50px;display:grid;place-items:center;background:#e8e5ff;border:2px solid var(--ink);border-radius:50%}
+.sus-head b{font-size:16px}.sus-head small{display:block;color:#72798a}
+.ask{display:flex;gap:5px;margin-top:8px}.ask button{flex:1;border:2px solid var(--ink);border-radius:8px;background:#dfeaff;padding:6px;font-size:12px;font-weight:900;cursor:pointer}
+.ask button:disabled{opacity:.45}.reply{font-size:13px;font-weight:700;background:#fff5c9;border-radius:8px;padding:7px;margin-top:7px;display:none}
+.reply.show{display:block}
+.accuse-grid{display:grid;gap:8px}.accuse{border:3px solid var(--ink);border-radius:12px;background:#fff;padding:10px;font-weight:900;cursor:pointer;text-align:left}.accuse:hover{background:#ffd9e2}
+.tip{background:#e9e5ff;border-radius:12px;padding:10px;font-size:13px;font-weight:700;margin-top:10px}
+.toast{position:fixed;left:50%;top:20%;transform:translate(-50%,-30px);background:#fff;border:4px solid var(--ink);border-radius:14px;padding:12px 22px;font-weight:1000;font-size:18px;opacity:0;pointer-events:none;z-index:30}
+.toast.show{animation:toast 1.5s}@keyframes toast{15%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-25px)}}
+.result-card h2{font-size:46px;margin:10px}.verdict{font-size:72px}.explain{background:#fff;border:3px solid var(--ink);border-radius:15px;padding:16px;margin:18px 0;text-align:left;font-weight:700}
+@media(max-width:1000px){.layout{grid-template-columns:190px 1fr}.right-panel{grid-column:1/-1}.right-panel .content-view.active{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.scene{min-height:560px}}
+@media(max-width:700px){.screen{padding:7px}.brief{grid-template-columns:1fr}.layout{display:flex;flex-direction:column}.panel{order:2}.scene{min-height:520px;order:1}.hud{grid-template-columns:1fr 1fr}.timer{grid-column:1/-1;grid-row:1;text-align:center}.right-panel .content-view.active{display:block}.nav-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.nav-panel h2,.nav-panel .progress,.nav-panel .tip{grid-column:1/-1}.nav-btn{font-size:12px;padding:8px;margin:0}.nav-btn .num{display:none}}
+</style>
+</head>
+<body>
+<section id="menu" class="screen active">
+ <div class="menu-card card">
+  <span class="badge">7 MINUTES • RANDOM CASES</span>
+  <h1>One-Minute<br>Detective</h1>
+  <p class="subtitle">Search the room. Question the suspects. Trust the evidence. Name the culprit before time runs out.</p>
+  <div class="brief">
+   <div><b>🔎 Examine</b>Click suspicious objects to collect evidence.</div>
+   <div><b>💬 Question</b>Ask suspects about motives and alibis.</div>
+   <div><b>⚖️ Decide</b>Compare statements and accuse one person.</div>
+  </div>
+  <button class="primary" id="startBtn">Open a random case</button>
+  <div class="keys"><kbd>1</kbd> Scene &nbsp; <kbd>2</kbd> Suspects &nbsp; <kbd>3</kbd> Accuse &nbsp; <kbd>H</kbd> Hint</div>
+ </div>
+</section>
+
+<section id="game" class="screen">
+ <header class="hud">
+  <div class="case-title" id="caseTitle">Case</div>
+  <div class="timer" id="timer">07:00</div>
+  <div class="score">🕵️ Evidence <span id="foundCount">0</span>/4</div>
+ </header>
+ <div class="layout">
+  <aside class="panel nav-panel">
+   <h2>Case Navigation</h2>
+   <button class="nav-btn active" data-view="sceneView"><span class="num">1</span>Crime Scene</button>
+   <button class="nav-btn" data-view="suspectView"><span class="num">2</span>Suspects</button>
+   <button class="nav-btn" data-view="accuseView"><span class="num">3</span>Make Accusation</button>
+   <div class="progress"><span id="caseProgress" style="width:0"></span></div>
+   <button class="nav-btn" id="hintBtn"><span class="num">H</span>Get a Hint</button>
+   <div class="tip" id="objective">Find evidence and expose the lie.</div>
+  </aside>
+
+  <main class="scene" id="scene">
+   <div class="scene-title" id="location">The Study</div>
+   <div class="window"></div><div class="lamp">💡</div><div class="desk"></div>
+   <button class="evidence e1" data-index="0" aria-label="Examine evidence">🔍</button>
+   <button class="evidence e2" data-index="1" aria-label="Examine evidence">📄</button>
+   <button class="evidence e3" data-index="2" aria-label="Examine evidence">👣</button>
+   <button class="evidence e4" data-index="3" aria-label="Examine evidence">🧤</button>
+   <div class="hint">Click glowing objects to inspect them</div>
+  </main>
+
+  <aside class="panel right-panel">
+   <section id="sceneView" class="content-view active">
+    <h2>🔎 Evidence Notebook</h2>
+    <div class="clue-list" id="clueList"><div class="empty">No evidence yet.<br>Search the room!</div></div>
+   </section>
+   <section id="suspectView" class="content-view">
+    <h2>💬 Question Suspects</h2>
+    <div id="suspects"></div>
+   </section>
+   <section id="accuseView" class="content-view">
+    <h2>⚖️ Who Did It?</h2>
+    <p>Choose carefully. Your accusation ends the case.</p>
+    <div class="accuse-grid" id="accuseGrid"></div>
+    <div class="tip">Evidence beats instinct. Look for the statement contradicted by a physical clue.</div>
+   </section>
+  </aside>
+ </div>
+</section>
+
+<section id="result" class="screen">
+ <div class="result-card card">
+  <div class="verdict" id="verdictIcon">🏆</div>
+  <h2 id="verdictTitle">Case Solved!</h2>
+  <div class="explain" id="explanation"></div>
+  <p><b>Score:</b> <span id="finalScore">0</span> &nbsp; <b>Best:</b> <span id="bestScore">0</span></p>
+  <button class="primary" id="againBtn">New random case</button>
+ </div>
+</section>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const cases=[
+ {title:"The Vanished Sapphire",location:"Lady Vale's Study",crime:"A priceless sapphire disappeared from a locked display.",
+ evidence:[
+  ["Broken Blue Thread","A blue uniform thread is caught in the display lock.","🧵"],
+  ["Fresh Coffee Ring","A warm coffee ring marks the desk beside the display.","☕"],
+  ["Muddy Boot Print","A narrow boot print leads toward the staff corridor.","👣"],
+  ["Stopped Clock","The clock stopped at 8:42 when it was knocked from the shelf.","🕰️"]],
+ suspects:[
+  {name:"Mara Bell",role:"Museum Curator",face:"👩🏻‍💼",motive:"The museum recently rejected her promotion.",alibi:"I was cataloguing paintings upstairs from 8:30.",tell:"I never entered the study or drank coffee tonight."},
+  {name:"Theo Finch",role:"Security Guard",face:"👨🏽‍✈️",motive:"He has large gambling debts.",alibi:"I checked the garden gate at 8:40.",tell:"My uniform is black, and my boots are wide."},
+  {name:"Iris Vale",role:"Owner's Niece",face:"👩🏾",motive:"She expected to inherit the jewel.",alibi:"I was on a video call until 8:50.",tell:"I wore slippers all evening."}],
+ culprit:0, reason:"Mara claimed she never entered the study, but her blue curator-uniform thread was caught inside the lock. The fresh coffee ring also contradicts her statement."
+ },
+ {title:"The Midnight Recipe",location:"The Moonlight Café",crime:"A secret competition recipe was stolen moments before judging.",
+ evidence:[
+  ["Cinnamon Dust","Cinnamon dust forms a trail toward the back door.","✨"],
+  ["Torn Order Slip","The slip records a staff meal ordered at 11:47.","🧾"],
+  ["Green Button","A green coat button lies beneath the recipe cabinet.","🟢"],
+  ["Cold Oven","The oven has been cold for at least an hour.","🧊"]],
+ suspects:[
+  {name:"Nico Stone",role:"Rival Chef",face:"👨🏻‍🍳",motive:"Winning would save his failing restaurant.",alibi:"I baked pastries in the kitchen all night.",tell:"My coat is white and has no buttons."},
+  {name:"Priya Moss",role:"Food Critic",face:"👩🏽‍💼",motive:"She was offered money for the recipe.",alibi:"I ate in the dining room at 11:47.",tell:"My green coat stayed on the chair."},
+  {name:"Luca Reed",role:"Waiter",face:"🧑🏼",motive:"He wanted revenge after being fired.",alibi:"I left through the front door before 11:30.",tell:"I dislike cinnamon and never touch it."}],
+ culprit:0, reason:"Nico said he was baking all night, but the oven was completely cold. His false alibi places him free to steal the recipe."
+ },
+ {title:"The Silent Violin",location:"Grand Theatre Dressing Room",crime:"A famous violin vanished during the final rehearsal.",
+ evidence:[
+  ["Rosin Fingerprint","A clear fingerprint appears in violin rosin on the window latch.","🖐️"],
+  ["Silver Sequin","A silver sequin is wedged under the instrument case.","✨"],
+  ["Stage Schedule","The corridor was empty during the dancer's solo.","📋"],
+  ["Rain on Sill","The open window sill is wet, but the floor beneath it is dry.","🌧️"]],
+ suspects:[
+  {name:"Elena Swift",role:"Lead Dancer",face:"💃🏽",motive:"She resented the violinist receiving top billing.",alibi:"I performed my solo on stage the whole time.",tell:"My costume has silver sequins."},
+  {name:"Marcus Gray",role:"Stage Manager",face:"👨🏿‍💼",motive:"He planned to sell the instrument.",alibi:"I watched Elena's solo from the lighting booth.",tell:"I locked the window before rehearsal."},
+  {name:"Sofia Lin",role:"Understudy",face:"👩🏻",motive:"She wanted the concert cancelled.",alibi:"I was practising in the orchestra room.",tell:"I have never handled violin rosin."}],
+ culprit:1, reason:"The dry floor proves the window was opened only after the rain, staging a fake escape. Marcus claimed he had locked it and had access while the corridor was empty."
+ }];
+let game,timerID;
+function toast(text){const t=$('#toast');t.textContent=text;t.classList.remove('show');void t.offsetWidth;t.classList.add('show')}
+function start(){
+ const data=cases[Math.floor(Math.random()*cases.length)];
+ game={data,time:420,found:new Set(),asked:new Set(),score:0,ended:false,hints:0};
+ $('#menu').classList.remove('active');$('#result').classList.remove('active');$('#game').classList.add('active');
+ $('#caseTitle').textContent=data.title;$('#location').textContent=data.location;$('#objective').textContent=data.crime;
+ $('#timer').textContent="07:00";$('#timer').classList.remove('danger');$('#foundCount').textContent=0;$('#caseProgress').style.width="0%";
+ $$('.evidence').forEach((b,i)=>{b.classList.remove('found');b.textContent=data.evidence[i][2]});
+ renderClues();renderSuspects();renderAccusations();switchView('sceneView');
+ clearInterval(timerID);timerID=setInterval(tick,1000)
+}
+function tick(){
+ if(game.ended)return;game.time--;const m=Math.floor(game.time/60),s=game.time%60;
+ $('#timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+ $('#timer').classList.toggle('danger',game.time<=15);
+ if(game.time<=0)finish(false,null,"Time ran out before you made an accusation.")
+}
+function inspect(i){
+ if(game.ended||game.found.has(i))return;
+ game.found.add(i);game.score+=100;document.querySelector(`[data-index="${i}"]`).classList.add('found');
+ $('#foundCount').textContent=game.found.size;$('#caseProgress').style.width=`${game.found.size*20}%`;
+ renderClues();toast("Evidence added to notebook! +100")
+}
+function renderClues(){
+ const list=$('#clueList');
+ if(!game.found.size){list.innerHTML='<div class="empty">No evidence yet.<br>Search the room!</div>';return}
+ list.innerHTML=[...game.found].map(i=>{const e=game.data.evidence[i];return `<div class="clue"><b>${e[2]} ${e[0]}</b>${e[1]}</div>`}).join('')
+}
+function renderSuspects(){
+ $('#suspects').innerHTML=game.data.suspects.map((s,i)=>`
+ <div class="suspect"><div class="sus-head"><div class="avatar">${s.face}</div><div><b>${s.name}</b><small>${s.role}</small></div></div>
+ <div class="ask"><button data-ask="${i}:motive">Motive</button><button data-ask="${i}:alibi">Alibi</button><button data-ask="${i}:tell">Statement</button></div>
+ <div class="reply" id="reply${i}"></div></div>`).join('');
+ $$('[data-ask]').forEach(b=>b.addEventListener('click',()=>ask(b)))
+}
+function ask(btn){
+ if(game.ended)return;const [i,type]=btn.dataset.ask.split(':'),s=game.data.suspects[i],key=btn.dataset.ask;
+ const labels={motive:"Motive",alibi:"Alibi",tell:"Statement"};
+ $('#reply'+i).innerHTML=`<b>${labels[type]}:</b> “${s[type]}”`;$('#reply'+i).classList.add('show');
+ if(!game.asked.has(key)){game.asked.add(key);game.score+=20;btn.disabled=true;toast("Interview note recorded +20")}
+}
+function renderAccusations(){
+ $('#accuseGrid').innerHTML=game.data.suspects.map((s,i)=>`<button class="accuse" data-accuse="${i}">${s.face} ${s.name}<br><small>${s.role}</small></button>`).join('');
+ $$('[data-accuse]').forEach(b=>b.addEventListener('click',()=>accuse(Number(b.dataset.accuse))))
+}
+function accuse(i){
+ if(game.ended)return;
+ const correct=i===game.data.culprit;
+ if(correct)game.score+=500+game.time*10+game.found.size*50;
+ finish(correct,i,correct?game.data.reason:`${game.data.suspects[i].name} was not the culprit. ${game.data.reason}`)
+}
+function finish(correct,choice,text){
+ game.ended=true;clearInterval(timerID);$('#game').classList.remove('active');$('#result').classList.add('active');
+ $('#verdictIcon').textContent=correct?'🏆':'🚨';$('#verdictTitle').textContent=correct?'Case Solved!':choice===null?'Out of Time!':'Wrong Suspect!';
+ $('#explanation').innerHTML=`<b>${correct?'Excellent deduction.':'Case report:'}</b><br>${text}<br><br><b>The culprit was ${game.data.suspects[game.data.culprit].name}.</b>`;
+ const best=Math.max(game.score,Number(localStorage.detectiveBest||0));localStorage.detectiveBest=best;
+ $('#finalScore').textContent=game.score;$('#bestScore').textContent=best
+}
+function switchView(id){
+ $$('.content-view').forEach(v=>v.classList.toggle('active',v.id===id));
+ $$('.nav-btn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+ if(id!=='sceneView')toast(id==='suspectView'?'Question everyone—liars slip up.':'Review evidence before accusing.')
+}
+function hint(){
+ if(!game||game.ended)return;
+ game.hints++;game.score=Math.max(0,game.score-25);
+ const unseen=[0,1,2,3].filter(i=>!game.found.has(i));
+ if(unseen.length){const i=unseen[0];document.querySelector(`[data-index="${i}"]`).animate([{transform:'scale(1)'},{transform:'scale(1.4)'},{transform:'scale(1)'}],{duration:700,iterations:2});toast("A suspicious object is pulsing… -25")}
+ else toast("Compare each alibi with the physical evidence. -25")
+}
+$$('.evidence').forEach(b=>b.addEventListener('click',()=>inspect(Number(b.dataset.index))));
+$$('[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+$('#hintBtn').addEventListener('click',hint);$('#startBtn').addEventListener('click',start);$('#againBtn').addEventListener('click',start);
+addEventListener('keydown',e=>{if(!game||game.ended)return;if(e.key==='1')switchView('sceneView');if(e.key==='2')switchView('suspectView');if(e.key==='3')switchView('accuseView');if(e.key.toLowerCase()==='h')hint()});
+</script>
+</body>
+</html>
